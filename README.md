@@ -47,7 +47,7 @@ Thermostats:
 * TS600
 * VS10WRF/VS10BRF
 * VS20WRF/VS20BRF
-* SQ610 (`current_floor_temperature` is populated when the S1/S2 input is configured as "floor sensor" in the installer menu; `None` otherwise)
+* SQ610
 * SQ610RF
 * FC600
 
