@@ -511,8 +511,8 @@ class IT600Gateway:
                             # This is confirmed by Status_d[8:12] always matching LocalTemperature_x100 exactly,
                             # i.e. the same 4-decimal-digit x100 encoding is reused for adjacent slots in Status_d.
                             if th.get("OUTSensorProbe") == 1:
-                                status_d = th.get("Status_d", "")
-                                if len(status_d) >= 16:
+                                status_d = th.get("Status_d")
+                                if isinstance(status_d, str) and len(status_d) >= 16:
                                     try:
                                         floor_temp_raw = int(status_d[12:16])
                                         if 0 < floor_temp_raw <= 10000:

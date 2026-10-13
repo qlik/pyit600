@@ -6,14 +6,14 @@ from unittest.mock import AsyncMock, patch
 from pyit600.gateway import IT600Gateway
 
 
-def _sq610_device_status(unique_id: str, status_d: str, out_sensor_probe: int = 1) -> dict:
+def _sq610_device_status(unique_id: str, status_d, out_sensor_probe: int = 1, model: str = "SQ610NH") -> dict:
     """Build a minimal, synthetic sIT600TH device status as returned by the
     gateway's "readall"/"deviceid" endpoints, structurally identical to real
     captured responses but with anonymized identifiers."""
     return {
         "data": {"DeviceType": 100, "Endpoint": 9, "UniID": unique_id},
-        "DeviceL": {"ModelIdentifier_i": "SQ610NH"},
-        "sBasicS": {"ManufactureName": "SALUS", "ModelIdentifier": "SQ610NH"},
+        "DeviceL": {"ModelIdentifier_i": model},
+        "sBasicS": {"ManufactureName": "SALUS", "ModelIdentifier": model},
         "sZDO": {
             "DeviceName": '{"deviceName": "Test Thermostat"}',
             "FirmwareVersion": "00000056",
@@ -119,6 +119,29 @@ class TestSQ610FloorTemperature(unittest.IsolatedAsyncioTestCase):
         result = await self._refresh(device)
 
         self.assertIsNone(result.current_floor_temperature)
+
+    async def test_floor_temperature_none_when_status_d_not_a_string(self):
+        # A null/non-string Status_d must not raise and drop the thermostat.
+        device = _sq610_device_status("test-uid", status_d=None)
+
+        result = await self._refresh(device)
+
+        self.assertIsNone(result.current_floor_temperature)
+        self.assertEqual(result.current_temperature, 18.53)
+
+    async def test_non_sq610_sit600th_model_unaffected(self):
+        """Other sIT600TH thermostats share the code path with SQ610 but
+        must not get floor temperature or humidity parsed, even if they
+        happen to report the same fields."""
+        status_d = "71b30d0218532138012000210024000404013030303000007104"
+        device = _sq610_device_status("test-uid", status_d, model="VS20WRF")
+
+        result = await self._refresh(device)
+
+        self.assertIsNone(result.current_floor_temperature)
+        self.assertIsNone(result.current_humidity)
+        self.assertEqual(result.current_temperature, 18.53)
+        self.assertEqual(result.target_temperature, 20.0)
 
     async def test_other_thermostat_model_unaffected(self):
         """sTherS-based thermostats never had floor temperature parsing and
